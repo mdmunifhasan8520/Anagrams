@@ -8,8 +8,12 @@
 
 import UIKit
 
+protocol TileDragDelegateProtocol {
+    func tileView(tileView: TileView, didDragToPoint: CGPoint)
+}
+
 //1
-class TileView:UIImageView {
+class TileView: UIImageView {
     //2
     var letter: Character
     
@@ -20,6 +24,11 @@ class TileView:UIImageView {
     required init(coder aDecoder:NSCoder) {
         fatalError("use init(letter:, sideLength:")
     }
+    
+    private var xOffset: CGFloat = 0.0
+    private var yOffset: CGFloat = 0.0
+    
+    var dragDelegate: TileDragDelegateProtocol?
     
     //5 create a new tile for a given letter
     init(letter:Character, sideLength:CGFloat) {
@@ -45,5 +54,50 @@ class TileView:UIImageView {
         letterLabel.text = String(letter).uppercased()
         letterLabel.font = UIFont(name: "Verdana-Bold", size: 78.0*scale)
         self.addSubview(letterLabel)
+        
+        self.isUserInteractionEnabled = true
     }
+
+    //1
+    
+    func randomize() {
+        //1
+        //set random rotation of the tile
+        //anywhere between -0.2 and 0.3 radians
+        let rotation = CGFloat(randomNumber(minX:0, maxX:50)) / 100.0 - 0.2
+        self.transform = CGAffineTransform(rotationAngle: rotation)
+        
+        //2
+        //move randomly upwards
+        let yOffset = CGFloat(randomNumber(minX: 0, maxX: 10) - 10)
+        self.center = CGPoint(x: self.center.x, y: self.center.y + yOffset)
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesBegan(touches, with: event)
+        if let touch = touches.first as? UITouch {
+            let point = touch.location(in: self.superview)
+            xOffset = point.x - self.center.x
+            yOffset = point.y - self.center.y
+        }
+    }
+    //2
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if let touch = touches.first as? UITouch {
+            let point = touch.location(in: self.superview)
+            //self.center = CGPointMake(point.x - xOffset, point.y - yOffset)
+            self.center = CGPoint(x: point.x - xOffset, y: point.y - yOffset)
+        }
+    }
+    
+    //3
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        self.touchesMoved(touches, with: event)
+        dragDelegate?.tileView(tileView: self, didDragToPoint: self.center)
+    }
+    
+   
+    
 }
+
+
